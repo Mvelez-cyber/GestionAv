@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-from streamlit_modal import Modal
 
 # Función para organizar los datos del DataFrame
 def organizar_datos(df):
@@ -52,13 +51,15 @@ def extraer_talla(nombre_producto):
 
 # Función para actualizar los códigos de barras
 def actualizar_codigos(df):
-    modal = Modal("Actualizar Códigos de Barras")
+    updated_codes = {}
     for index, row in df.iterrows():
-        with modal.container():
-            st.write(f"Nombre del producto: {row['Nombre del producto']}")
-            codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=index)
-            if codigo_barras:
-                df.at[index, 'Código del producto'] = codigo_barras
+        codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=f"codigo_{index}")
+        updated_codes[index] = codigo_barras
+
+    if st.button('Guardar códigos'):
+        for index, codigo_barras in updated_codes.items():
+            df.at[index, 'Código del producto'] = codigo_barras
+        st.success("Códigos de barras actualizados")
     return df
 
 # Función principal de la aplicación
