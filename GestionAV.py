@@ -50,17 +50,21 @@ def extraer_talla(nombre_producto):
     return nombre_producto, None
 
 # Función para actualizar los códigos de barras
-def actualizar_codigos(df):
+def actualizar_codigos(df, bodega):
+    bodega_df = df[df['Bodega del producto'] == bodega].copy()
     updated_codes = {}
-    for index, row in df.iterrows():
-        codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=f"codigo_{index}")
-        updated_codes[index] = codigo_barras
+    
+    if st.button('Guardar progreso'):
+        for index, row in bodega_df.iterrows():
+            codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=f"codigo_{index}")
+            updated_codes[index] = codigo_barras
+            bodega_df.at[index, 'Código del producto'] = codigo_barras
+        st.success("Progreso guardado")
 
-    if st.button('Guardar códigos'):
-        for index, codigo_barras in updated_codes.items():
-            df.at[index, 'Código del producto'] = codigo_barras
-        st.success("Códigos de barras actualizados")
-    return df
+    st.write('Datos actualizados:')
+    st.dataframe(bodega_df.head())
+    
+    return bodega_df
 
 # Función principal de la aplicación
 def main():
@@ -79,21 +83,33 @@ def main():
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
 
+        bodega_list = cleaned_df['Bodega del producto'].unique().tolist()
+        selected_bodega = st.selectbox('Seleccione la bodega para actualizar los códigos:', bodega_list)
+
         if st.button('Actualizar códigos'):
-            updated_df = actualizar_codigos(cleaned_df)
-            st.write('Datos actualizados:')
-            st.dataframe(updated_df.head())
+            updated_df = actualizar_codigos(cleaned_df, selected_bodega)
 
             buffer = BytesIO()
             updated_df.to_excel(buffer, index=False)
             buffer.seek(0)
 
             st.download_button(
-                label='Descargar archivo organizado',
+                label='Descargar archivo con progreso',
                 data=buffer,
-                file_name='archivo_organizado_Antioquia_Ventas.xlsx',
+                file_name='archivo_progreso_Antioquia_Ventas.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
+
+        buffer_cleaned = BytesIO()
+        cleaned_df.to_excel(buffer_cleaned, index=False)
+        buffer_cleaned.seek(0)
+
+        st.download_button(
+            label='Descargar datos limpios',
+            data=buffer_cleaned,
+            file_name='datos_limpios_Antioquia_Ventas.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
 if __name__ == '__main__':
     main()
