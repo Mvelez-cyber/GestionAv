@@ -74,7 +74,7 @@ def main():
         st.download_button(
             label='Descargar archivo organizado',
             data=buffer,
-            file_name='archivo_organizado_con_tallas.xlsx',
+            file_name='archivo_organizado_Antioquia_Ventas.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
