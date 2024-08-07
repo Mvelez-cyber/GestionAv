@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-
-from st_aggrid import AgGrid, GridOptionsBuilder
-from st_aggrid.shared import GridUpdateMode
 from streamlit_modal import Modal
 
 # Función para extraer talla y modificar el nombre del producto
@@ -31,20 +28,15 @@ def eliminar_filas_no_deseadas(df):
 
 # Función para actualizar códigos
 def actualizar_codigos(df):
-    modal = Modal(key="Actualizar_Códigos_de_Barras")
-    with modal.container():
-        st.write("Ingrese el código de barras para el producto:")
-        for i, row in df.iterrows():
-            producto = row["Nombre del producto"]
-            codigo_de_barras = st.text_input(f"Codigo de barras para '{producto}'", key=f"barcode_{i}")
-            if st.button("Guardar", key=f"save_{i}"):
-                df.at[i, "Codigo del producto"] = codigo_de_barras
-                st.success(f"Código de barras actualizado para '{producto}'")
-            if st.button("Continuar", key=f"next_{i}"):
-                break
-        if st.button("Cerrar"):
-            modal.close()
-
+    st.write("Ingrese el código de barras para el producto:")
+    for i, row in df.iterrows():
+        producto = row["Nombre del producto"]
+        codigo_de_barras = st.text_input(f"Codigo de barras para '{producto}'", key=f"barcode_{i}")
+        if st.button("Guardar", key=f"save_{i}"):
+            df.at[i, "Codigo del producto"] = codigo_de_barras
+            st.success(f"Código de barras actualizado para '{producto}'")
+        if st.button("Continuar", key=f"next_{i}"):
+            break
     return df
 
 # Función principal de la aplicación
