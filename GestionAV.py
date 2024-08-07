@@ -57,7 +57,7 @@ def actualizar_codigos(df, bodega):
     bodega_df = bodega_df.reset_index(drop=True)
     
     st.write('Datos actualizados:')
-    edited_df = st.experimental_data_editor(
+    edited_df = st.data_editor(
         bodega_df,
         disabled=["Código del producto"],  # No permitir la edición de 'Código del producto'
         num_rows="dynamic",  # Permitir agregar/eliminar filas
