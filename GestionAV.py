@@ -96,7 +96,6 @@ def main():
     """
     <div style="display: flex; align-items: center;">
         <img src="https://taplink.st/a/2/f/3/6/44927f.png?4" style="width: 50px; height: auto; margin-right: 10px;">
-        <h1 style="margin: 0;">Organización de Productos</h1>
     </div>
     """,
     unsafe_allow_html=True
