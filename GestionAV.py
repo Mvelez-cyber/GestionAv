@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
+from st_aggrid import AgGrid, GridOptionsBuilder
+import streamlit_modal as modal
 
 # Función para organizar los datos del DataFrame
 def organizar_datos(df):
@@ -53,13 +55,30 @@ def extraer_talla(nombre_producto):
 def actualizar_codigos(df, bodega):
     bodega_df = df[df['Bodega del producto'] == bodega].copy()
     updated_codes = {}
-    
-    if st.button('Guardar progreso'):
-        for index, row in bodega_df.iterrows():
-            codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=f"codigo_{index}")
-            updated_codes[index] = codigo_barras
-            bodega_df.at[index, 'Código del producto'] = codigo_barras
-        st.success("Progreso guardado")
+    total_productos = len(bodega_df)
+
+    if 'current_index' not in st.session_state:
+        st.session_state.current_index = 0
+
+    index = st.session_state.current_index
+    if index < total_productos:
+        producto = bodega_df.iloc[index]
+
+        modal.open(name="codigo_barras_modal")
+
+        with modal.container(name="codigo_barras_modal", title="Actualizar Código de Barras"):
+            st.write(f"Ingrese el código de barras para el producto: {producto['Nombre del producto']}")
+            codigo_barras = st.text_input("Código de barras", key=f"codigo_{index}")
+            
+            if st.button('Guardar'):
+                updated_codes[index] = codigo_barras
+                bodega_df.at[bodega_df.index[index], 'Código del producto'] = codigo_barras
+                st.session_state.current_index = (index + 1) % total_productos
+                modal.close(name="codigo_barras_modal")
+
+            if st.button('Continuar'):
+                st.session_state.current_index = (index + 1) % total_productos
+                modal.close(name="codigo_barras_modal")
 
     st.write('Datos actualizados:')
     st.dataframe(bodega_df.head())
