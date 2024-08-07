@@ -17,13 +17,11 @@ def extraer_talla(nombre_producto):
 
 # Función para organizar los datos
 def organizar_datos(df):
-    # Personaliza esta función según tus necesidades específicas
     df.columns = [col.strip() for col in df.columns]
     return df
 
 # Función para eliminar filas no deseadas
 def eliminar_filas_no_deseadas(df):
-    # Personaliza esta función según tus necesidades específicas
     return df.dropna(how='all')
 
 # Función para actualizar códigos
