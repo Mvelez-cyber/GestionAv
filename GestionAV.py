@@ -2,40 +2,88 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-from streamlit_modal import Modal
+from st_aggrid import AgGrid, GridOptionsBuilder
+import streamlit_modal as modal
 
-# Función para extraer talla y modificar el nombre del producto
-def extraer_talla(nombre_producto):
-    patron = r"\b(\d{1,2}(?:\.\d{1,2})? ?[XSML]{1,3})\b"
-    talla = re.search(patron, nombre_producto)
-    if talla:
-        talla = talla.group(0)
-        nombre_producto = re.sub(patron, "", nombre_producto).strip()
-    else:
-        talla = None
-    return nombre_producto, talla
-
-# Función para organizar los datos
+# Función para organizar los datos del DataFrame
 def organizar_datos(df):
-    df.columns = [col.strip() for col in df.columns]
-    return df
+    organized_data = []
+    producto = None
+    bodega = None
+
+    for i, row in df.iterrows():
+        cell_value = str(row[0]).strip()
+        if cell_value.startswith('Producto:'):
+            producto = cell_value.replace('Producto: ', '')
+        elif cell_value.startswith('Bodega:'):
+            bodega = cell_value.replace('Bodega: ', '')
+        else:
+            if not cell_value.isdigit():
+                codigo_producto = cell_value
+                nombre_producto = row[1]
+                referencia_fabrica = row[2]
+                saldo_cantidades = row[3]
+                organized_data.append({
+                    'Bodega del producto': bodega,
+                    'Código del producto': codigo_producto,
+                    'Nombre del producto': nombre_producto,
+                    'Talla': None,
+                    'Cantidad': saldo_cantidades
+                })
+    return pd.DataFrame(organized_data)
 
 # Función para eliminar filas no deseadas
 def eliminar_filas_no_deseadas(df):
-    return df.dropna(how='all')
-
-# Función para actualizar códigos
-def actualizar_codigos(df):
-    st.write("Ingrese el código de barras para el producto:")
-    for i, row in df.iterrows():
-        producto = row["Nombre del producto"]
-        codigo_de_barras = st.text_input(f"Codigo de barras para '{producto}'", key=f"barcode_{i}")
-        if st.button("Guardar", key=f"save_{i}"):
-            df.at[i, "Codigo del producto"] = codigo_de_barras
-            st.success(f"Código de barras actualizado para '{producto}'")
-        if st.button("Continuar", key=f"next_{i}"):
-            break
+    df = df.drop(index=range(0, 8))
+    df.reset_index(drop=True, inplace=True)
     return df
+
+# Función para extraer talla y modificar el nombre del producto
+def extraer_talla(nombre_producto):
+    if not isinstance(nombre_producto, str):
+        return nombre_producto, None
+
+    talla_pattern = re.compile(r'\b(T|TALLA)\s?(XS|S|M|L|XL|XXL|XXXL)\b$')
+    match = talla_pattern.search(nombre_producto)
+    if match:
+        talla = match.group(2)
+        nombre_producto = talla_pattern.sub('', nombre_producto).strip()
+        return nombre_producto, talla
+    return nombre_producto, None
+
+# Función para actualizar los códigos de barras
+def actualizar_codigos(df, bodega):
+    bodega_df = df[df['Bodega del producto'] == bodega].copy()
+    updated_codes = {}
+    total_productos = len(bodega_df)
+
+    if 'current_index' not in st.session_state:
+        st.session_state.current_index = 0
+
+    index = st.session_state.current_index
+    if index < total_productos:
+        producto = bodega_df.iloc[index]
+
+        modal.open(name="codigo_barras_modal")
+
+        with modal.container(name="codigo_barras_modal", title="Actualizar Código de Barras"):
+            st.write(f"Ingrese el código de barras para el producto: {producto['Nombre del producto']}")
+            codigo_barras = st.text_input("Código de barras", key=f"codigo_{index}")
+            
+            if st.button('Guardar'):
+                updated_codes[index] = codigo_barras
+                bodega_df.at[bodega_df.index[index], 'Código del producto'] = codigo_barras
+                st.session_state.current_index = (index + 1) % total_productos
+                modal.close(name="codigo_barras_modal")
+
+            if st.button('Continuar'):
+                st.session_state.current_index = (index + 1) % total_productos
+                modal.close(name="codigo_barras_modal")
+
+    st.write('Datos actualizados:')
+    st.dataframe(bodega_df.head())
+    
+    return bodega_df
 
 # Función principal de la aplicación
 def main():
@@ -54,33 +102,31 @@ def main():
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
 
+        bodega_list = cleaned_df['Bodega del producto'].unique().tolist()
+        selected_bodega = st.selectbox('Seleccione la bodega para actualizar los códigos:', bodega_list)
+
         if st.button('Actualizar códigos'):
-            updated_df = actualizar_codigos(cleaned_df)
-            st.write('Datos actualizados:')
-            st.dataframe(updated_df)
+            updated_df = actualizar_codigos(cleaned_df, selected_bodega)
 
-            # Botón para guardar progreso
-            if st.button('Guardar progreso'):
-                buffer_temp = BytesIO()
-                updated_df.to_excel(buffer_temp, index=False)
-                buffer_temp.seek(0)
+            buffer = BytesIO()
+            updated_df.to_excel(buffer, index=False)
+            buffer.seek(0)
 
-                st.download_button(
-                    label='Descargar progreso guardado',
-                    data=buffer_temp,
-                    file_name='progreso_guardado.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+            st.download_button(
+                label='Descargar archivo con progreso',
+                data=buffer,
+                file_name='archivo_progreso_Antioquia_Ventas.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
 
-        # Botón para descargar datos limpios
         buffer_cleaned = BytesIO()
         cleaned_df.to_excel(buffer_cleaned, index=False)
         buffer_cleaned.seek(0)
 
         st.download_button(
-            label='Descargar archivo organizado',
+            label='Descargar datos limpios',
             data=buffer_cleaned,
-            file_name='archivo_organizado_Antioquia_Ventas.xlsx',
+            file_name='datos_limpios_Antioquia_Ventas.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 

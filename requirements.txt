@@ -1,4 +1,5 @@
 streamlit
 pandas
 openpyxl
-streamlit-aggrid
+streamlit_modal
+st_aggrid
