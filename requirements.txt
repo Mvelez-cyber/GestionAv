@@ -1,5 +1,5 @@
 streamlit==1.37.1
 pandas==1.5.0
 openpyxl==3.0.9
-st-aggrid==0.3.6
+st-aggrid==0.3.4
 streamlit-modal==0.1.2
