@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
+from streamlit_modal import Modal
 
 # Función para organizar los datos del DataFrame
 def organizar_datos(df):
@@ -50,21 +51,15 @@ def extraer_talla(nombre_producto):
     return nombre_producto, None
 
 # Función para actualizar los códigos de barras
-def actualizar_codigos(df, bodega):
-    bodega_df = df[df['Bodega del producto'] == bodega].copy()
-    updated_codes = {}
-    
-    if st.button('Guardar progreso'):
-        for index, row in bodega_df.iterrows():
-            codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=f"codigo_{index}")
-            updated_codes[index] = codigo_barras
-            bodega_df.at[index, 'Código del producto'] = codigo_barras
-        st.success("Progreso guardado")
-
-    st.write('Datos actualizados:')
-    st.dataframe(bodega_df.head())
-    
-    return bodega_df
+def actualizar_codigos(df):
+    modal = Modal("Actualizar Códigos de Barras")
+    for index, row in df.iterrows():
+        with modal.container():
+            st.write(f"Nombre del producto: {row['Nombre del producto']}")
+            codigo_barras = st.text_input(f"Ingrese el código de barras para '{row['Nombre del producto']}'", key=index)
+            if codigo_barras:
+                df.at[index, 'Código del producto'] = codigo_barras
+    return df
 
 # Función principal de la aplicación
 def main():
@@ -83,33 +78,21 @@ def main():
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
 
-        bodega_list = cleaned_df['Bodega del producto'].unique().tolist()
-        selected_bodega = st.selectbox('Seleccione la bodega para actualizar los códigos:', bodega_list)
-
         if st.button('Actualizar códigos'):
-            updated_df = actualizar_codigos(cleaned_df, selected_bodega)
+            updated_df = actualizar_codigos(cleaned_df)
+            st.write('Datos actualizados:')
+            st.dataframe(updated_df.head())
 
             buffer = BytesIO()
             updated_df.to_excel(buffer, index=False)
             buffer.seek(0)
 
             st.download_button(
-                label='Descargar archivo con progreso',
+                label='Descargar archivo organizado',
                 data=buffer,
-                file_name='archivo_progreso_Antioquia_Ventas.xlsx',
+                file_name='archivo_organizado_Antioquia_Ventas.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
-
-        buffer_cleaned = BytesIO()
-        cleaned_df.to_excel(buffer_cleaned, index=False)
-        buffer_cleaned.seek(0)
-
-        st.download_button(
-            label='Descargar datos limpios',
-            data=buffer_cleaned,
-            file_name='datos_limpios_Antioquia_Ventas.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
 
 if __name__ == '__main__':
     main()
