@@ -2,13 +2,6 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-from st_aggrid import AgGrid, GridOptionsBuilder
-import streamlit_modal as modal
-
-st.set_page_config(
-    page_title="Gestion de Inventarios Antioquia Ventas",
-    page_icon="https://taplink.st/a/2/f/3/6/44927f.png?4",  # This is an emoji shortcode. Could be a URL too.
-)
 
 # Función para organizar los datos del DataFrame
 def organizar_datos(df):
@@ -59,40 +52,24 @@ def extraer_talla(nombre_producto):
 # Función para actualizar los códigos de barras
 def actualizar_codigos(df, bodega):
     bodega_df = df[df['Bodega del producto'] == bodega].copy()
-    updated_codes = {}
-    total_productos = len(bodega_df)
-
-    if 'current_index' not in st.session_state:
-        st.session_state.current_index = 0
-
-    index = st.session_state.current_index
-    if index < total_productos:
-        producto = bodega_df.iloc[index]
-
-        modal.open(name="codigo_barras_modal")
-
-        with modal.container(name="codigo_barras_modal", title="Actualizar Código de Barras"):
-            st.write(f"Ingrese el código de barras para el producto: {producto['Nombre del producto']}")
-            codigo_barras = st.text_input("Código de barras", key=f"codigo_{index}")
-            
-            if st.button('Guardar'):
-                updated_codes[index] = codigo_barras
-                bodega_df.at[bodega_df.index[index], 'Código del producto'] = codigo_barras
-                st.session_state.current_index = (index + 1) % total_productos
-                modal.close(name="codigo_barras_modal")
-
-            if st.button('Continuar'):
-                st.session_state.current_index = (index + 1) % total_productos
-                modal.close(name="codigo_barras_modal")
-
-    st.write('Datos actualizados:')
-    st.dataframe(bodega_df.head())
+    bodega_df = bodega_df.reset_index(drop=True)
     
-    return bodega_df
+    st.write('Datos actualizados:')
+    edited_df = st.data_editor(
+        bodega_df,
+        disabled=["Código del producto"],  # No permitir la edición de 'Código del producto'
+        num_rows="dynamic",  # Permitir agregar/eliminar filas
+        column_config={
+            "Cantidad": st.column_config.NumberColumn(format="%d"),
+        },
+        key="bodega_table",
+    )
+    
+    return edited_df
 
 # Función principal de la aplicación
 def main():
-    st.title('Organización de Productos')
+    st.title('GestionAV - Organización de Productos')
     uploaded_file = st.file_uploader('Subir archivo Excel', type=['xlsx'])
 
     if uploaded_file is not None:
@@ -110,19 +87,24 @@ def main():
         bodega_list = cleaned_df['Bodega del producto'].unique().tolist()
         selected_bodega = st.selectbox('Seleccione la bodega para actualizar los códigos:', bodega_list)
 
-        if st.button('Actualizar códigos'):
+        if selected_bodega:
             updated_df = actualizar_codigos(cleaned_df, selected_bodega)
+            
+            if st.button('Aplicar cambios'):
+                for index, row in updated_df.iterrows():
+                    cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Cantidad'] = row['Cantidad']
+                st.success("Cambios aplicados")
 
-            buffer = BytesIO()
-            updated_df.to_excel(buffer, index=False)
-            buffer.seek(0)
+                buffer = BytesIO()
+                updated_df.to_excel(buffer, index=False)
+                buffer.seek(0)
 
-            st.download_button(
-                label='Descargar archivo con progreso',
-                data=buffer,
-                file_name='archivo_progreso_Antioquia_Ventas.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
+                st.download_button(
+                    label='Descargar archivo con progreso',
+                    data=buffer,
+                    file_name='archivo_progreso_Antioquia_Ventas.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
 
         buffer_cleaned = BytesIO()
         cleaned_df.to_excel(buffer_cleaned, index=False)
