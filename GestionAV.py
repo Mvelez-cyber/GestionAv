@@ -92,7 +92,15 @@ def actualizar_codigos(df, bodega):
 
 # Función principal de la aplicación
 def main():
-    st.image('https://taplink.st/a/2/f/3/6/44927f.png?4', use_column_width=True)
+    st.markdown(
+    """
+    <div style="display: flex; align-items: center;">
+        <img src="https://taplink.st/a/2/f/3/6/44927f.png?4" style="width: 50px; height: auto; margin-right: 10px;">
+        <h1 style="margin: 0;">Organización de Productos</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
     st.title('Organización de Productos')
     uploaded_file = st.file_uploader('Subir archivo Excel', type=['xlsx'])
 
