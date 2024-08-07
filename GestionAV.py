@@ -7,7 +7,7 @@ import streamlit_modal as modal
 
 st.set_page_config(
     page_title="Gestion de Inventarios Antioquia Ventas",
-    page_icon="https://scontent.feoh4-4.fna.fbcdn.net/v/t39.30808-6/272845067_131556436023520_1486119730164470438_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFGWyyeLl90S2IZjyunKskARKWe8kezVddEpZ7yR7NV10vVbACVRn8yrzJmXY8SY2i0sGzoDYYV45lQ--vr-ByD&_nc_ohc=qHIIWqgszIgQ7kNvgF3zWKz&_nc_ht=scontent.feoh4-4.fna&oh=00_AYC5JcS6iJbq-cwENhgvTm3BiVF_CQEN-_zG61JaO2byOw&oe=66B99328",  # This is an emoji shortcode. Could be a URL too.
+    page_icon="https://taplink.st/a/2/f/3/6/44927f.png?4",  # This is an emoji shortcode. Could be a URL too.
 )
 
 # Función para organizar los datos del DataFrame
