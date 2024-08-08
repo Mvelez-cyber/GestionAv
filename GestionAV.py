@@ -55,7 +55,14 @@ def actualizar_codigos(df, bodega):
     bodega_df = bodega_df.reset_index(drop=True)
     
     st.write('Datos actualizados:')
-    edited_df = st.data_editor(bodega_df, use_container_width=True)
+    editable_df = bodega_df.copy()
+    editable_df = editable_df.drop(columns=['Bodega del producto'])
+
+    # Usar st.data_editor para permitir la edición, pero sin la columna "Bodega del producto"
+    edited_df = st.data_editor(editable_df, use_container_width=True)
+
+    # Añadir de nuevo la columna "Bodega del producto" a la DataFrame editado
+    edited_df['Bodega del producto'] = bodega_df['Bodega del producto']
     
     return edited_df
 
