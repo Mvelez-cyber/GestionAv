@@ -55,9 +55,9 @@ def actualizar_codigos(df, bodega):
     bodega_df = bodega_df.reset_index(drop=True)
     
     st.write('Datos actualizados:')
-    edited_df = st.dataframe(bodega_df)
+    edited_df = st.data_editor(bodega_df, use_container_width=True)
     
-    return bodega_df
+    return edited_df
 
 # Función principal de la aplicación
 def main():
@@ -84,11 +84,12 @@ def main():
             
             if st.button('Aplicar cambios'):
                 for index, row in updated_df.iterrows():
+                    cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Código del producto'] = row['Código del producto']
                     cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Cantidad'] = row['Cantidad']
                 st.success("Cambios aplicados")
 
                 buffer = BytesIO()
-                updated_df.to_excel(buffer, index=False)
+                cleaned_df.to_excel(buffer, index=False)
                 buffer.seek(0)
 
                 st.download_button(
