@@ -1,9 +1,8 @@
 import streamlit as st
+from streamlit_modal import Modal
 import pandas as pd
 import re
 from io import BytesIO
-from streamlit_modal import Modal
-import streamlit.components.v1 as components
 
 # Función para organizar los datos del DataFrame
 def organizar_datos(df):
@@ -57,7 +56,7 @@ def actualizar_codigos(df, bodega):
     bodega_df = bodega_df.reset_index(drop=True)
     
     st.write('Datos actualizados:')
-    edited_df = st.data_editor(
+    edited_df = st.experimental_data_editor(
         bodega_df,
         disabled=["Código del producto"],  # No permitir la edición de 'Código del producto'
         num_rows="dynamic",  # Permitir agregar/eliminar filas
