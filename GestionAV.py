@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_modal import Modal
 import pandas as pd
 import re
 from io import BytesIO
@@ -56,17 +55,9 @@ def actualizar_codigos(df, bodega):
     bodega_df = bodega_df.reset_index(drop=True)
     
     st.write('Datos actualizados:')
-    edited_df = st.experimental_data_editor(
-        bodega_df,
-        disabled=["Código del producto"],  # No permitir la edición de 'Código del producto'
-        num_rows="dynamic",  # Permitir agregar/eliminar filas
-        column_config={
-            "Cantidad": st.column_config.NumberColumn(format="%d"),
-        },
-        key="bodega_table",
-    )
+    edited_df = st.dataframe(bodega_df)
     
-    return edited_df
+    return bodega_df
 
 # Función principal de la aplicación
 def main():
