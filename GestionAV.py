@@ -73,7 +73,7 @@ def extraer_talla(nombre_producto):
     if not isinstance(nombre_producto, str):
         return nombre_producto, None
 
-    talla_pattern = re.compile(r'\b(T|TALLA)\s?(XS|S|M|L|XL|XXL|XXXL)\b')
+    talla_pattern = re.compile(r'\b(T|TALLA)\s?(XS|S|M|L|XL|XXL|XXXL)\b$')
     match = talla_pattern.search(nombre_producto)
     if match:
         talla = match.group(2)
@@ -81,10 +81,11 @@ def extraer_talla(nombre_producto):
         return nombre_producto, talla
     return nombre_producto, None
 
-# Función para separar el código de barras y el nombre del producto
+# Función para separar el código del producto y el nombre del producto
 def separar_codigo_y_nombre(df):
-    df[['Código del producto', 'Nombre del producto']] = df['Código del producto'].str.split(' - ', 1, expand=True)
-    df[['Nombre del producto', 'Talla']] = df['Nombre del producto'].apply(lambda x: pd.Series(extraer_talla(x)))
+    split_columns = df['Código del producto'].str.split('-', n=1, expand=True)
+    df['Código del producto'] = split_columns[0]
+    df['Nombre del producto'] = split_columns[1]
     return df
 
 # Función para filtrar y actualizar los códigos de barras
@@ -114,9 +115,9 @@ def main():
         st.write('Datos subidos:')
         st.dataframe(df.head())
 
-        df = eliminar_filas_no_deseadas(df)
         cleaned_df = limpiar_datos(df)
-        cleaned_df = separar_codigo_y_nombre(cleaned_df)
+        cleaned_df = separar_codigo_y_nombre(cleaned_df)  # Aplicar la función para separar el código y nombre
+        cleaned_df[['Nombre del producto', 'Talla']] = cleaned_df['Nombre del producto'].apply(lambda x: pd.Series(extraer_talla(x)))
 
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
