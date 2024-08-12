@@ -16,7 +16,8 @@ def organizar_datos(df):
         elif cell_value.startswith('Bodega:'):
             bodega = cell_value.replace('Bodega: ', '')
         else:
-            if not cell_value.isdigit():
+            # Si el valor de la celda no es un número y no está vacío
+            if cell_value and not cell_value.isdigit():
                 codigo_producto = cell_value
                 nombre_producto = row[1]
                 referencia_fabrica = row[2]
@@ -56,14 +57,14 @@ def actualizar_codigos(df, bodega):
     
     st.write('Datos actualizados:')
     editable_df = bodega_df.copy()
-    editable_df = editable_df.drop(columns=['Bodega del producto'])
+    # Dejar solo la columna "Bodega del producto" como no editable
+    columnas_editables = [col for col in editable_df.columns if col != 'Bodega del producto']
 
-    # Usar st.data_editor para permitir la edición, pero sin la columna "Bodega del producto"
-    edited_df = st.data_editor(editable_df, use_container_width=True)
+    edited_df = st.data_editor(editable_df, disabled=['Bodega del producto'], use_container_width=True)
 
-    # Añadir de nuevo la columna "Bodega del producto" a la DataFrame editado
+    # Asegurar que la columna "Bodega del producto" no se modifique
     edited_df['Bodega del producto'] = bodega_df['Bodega del producto']
-    
+
     return edited_df
 
 # Función principal de la aplicación
