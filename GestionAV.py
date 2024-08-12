@@ -11,15 +11,15 @@ def organizar_datos(df):
 
     for i, row in df.iterrows():
         cell_value = str(row[0]).strip()
+
         if cell_value.startswith('Producto:'):
             producto = cell_value.replace('Producto: ', '')
         elif cell_value.startswith('Bodega:'):
             bodega = cell_value.replace('Bodega: ', '')
         else:
-            # Si el valor de la celda no es un número y no está vacío
-            if cell_value and not cell_value.isdigit():
+            if not cell_value.isdigit():
                 codigo_producto = cell_value
-                nombre_producto = row[1]  # Mantener el nombre del producto
+                nombre_producto = row[1]
                 referencia_fabrica = row[2]
                 saldo_cantidades = row[3]
                 organized_data.append({
@@ -29,15 +29,44 @@ def organizar_datos(df):
                     'Talla': None,
                     'Cantidad': saldo_cantidades
                 })
+
     return pd.DataFrame(organized_data)
 
-# Función para eliminar filas no deseadas sin perder información
+# Función para eliminar filas no deseadas
 def eliminar_filas_no_deseadas(df):
-    # Realiza la limpieza evitando eliminar información relevante
-    df_cleaned = df.dropna(subset=['Código del producto', 'Nombre del producto'])
-    df_cleaned = df_cleaned[df_cleaned['Código del producto'].str.startswith('7') | df_cleaned['Código del producto'].str.startswith('5')]
-    df_cleaned.reset_index(drop=True, inplace=True)
-    return df_cleaned
+    df = df.drop(index=range(0, 8))
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+# Función para limpiar los datos y asegurar que no se pierdan productos importantes
+def limpiar_datos(df):
+    cleaned_data = []
+    current_producto = None
+
+    for i, row in df.iterrows():
+        cell_value = str(row[0]).strip()
+
+        if 'Producto:' in cell_value:
+            current_producto = {
+                'producto': cell_value.replace('Producto: ', ''),
+                'nombre': row[1],
+                'referencia': row[2],
+                'cantidad': row[3]
+            }
+        elif 'Bodega:' in cell_value:
+            if current_producto:
+                bodega = cell_value.replace('Bodega: ', '')
+                cleaned_data.append({
+                    'Bodega del producto': bodega,
+                    'Código del producto': current_producto['producto'],
+                    'Nombre del producto': current_producto['nombre'],
+                    'Referencia de fábrica': current_producto['referencia'],
+                    'Cantidad': current_producto['cantidad']
+                })
+        elif current_producto and cell_value.isdigit():
+            current_producto['cantidad'] = cell_value
+
+    return pd.DataFrame(cleaned_data)
 
 # Función para extraer talla y modificar el nombre del producto
 def extraer_talla(nombre_producto):
@@ -52,19 +81,19 @@ def extraer_talla(nombre_producto):
         return nombre_producto, talla
     return nombre_producto, None
 
-# Función para actualizar los códigos de barras
+# Función para filtrar y actualizar los códigos de barras
 def actualizar_codigos(df, bodega):
     bodega_df = df[df['Bodega del producto'] == bodega].copy()
     bodega_df = bodega_df.reset_index(drop=True)
     
-    st.write('Datos actualizados:')
+    st.write(f'Datos actualizados para la bodega {bodega}:')
     editable_df = bodega_df.copy()
     editable_df = editable_df.drop(columns=['Bodega del producto'])
 
     # Usar st.data_editor para permitir la edición, pero sin la columna "Bodega del producto"
     edited_df = st.data_editor(editable_df, use_container_width=True)
 
-    # Añadir de nuevo la columna "Bodega del producto" al DataFrame editado
+    # Añadir de nuevo la columna "Bodega del producto" a la DataFrame editado
     edited_df['Bodega del producto'] = bodega_df['Bodega del producto']
     
     return edited_df
@@ -79,9 +108,7 @@ def main():
         st.write('Datos subidos:')
         st.dataframe(df.head())
 
-        # Organizar datos sin perder información
-        organized_df = organizar_datos(df)
-        cleaned_df = eliminar_filas_no_deseadas(organized_df)
+        cleaned_df = limpiar_datos(df)
         cleaned_df[['Nombre del producto', 'Talla']] = cleaned_df['Nombre del producto'].apply(lambda x: pd.Series(extraer_talla(x)))
 
         st.write('Datos organizados:')
@@ -98,10 +125,6 @@ def main():
                     cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Código del producto'] = row['Código del producto']
                     cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Cantidad'] = row['Cantidad']
                 st.success("Cambios aplicados")
-
-                # Visualizar los datos actualizados
-                st.write('Vista previa de los datos actualizados:')
-                st.dataframe(cleaned_df[cleaned_df['Bodega del producto'] == selected_bodega])
 
                 buffer = BytesIO()
                 cleaned_df.to_excel(buffer, index=False)
@@ -127,3 +150,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
