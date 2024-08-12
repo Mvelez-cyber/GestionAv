@@ -80,7 +80,7 @@ def extraer_talla(nombre_producto):
 
 # Función para separar el código de barras y el nombre del producto
 def separar_codigo_y_nombre(df):
-    df[['Código del producto', 'Nombre del producto']] = df['Código del producto'].str.split('-', 1, expand=True)
+    df[['Código del producto', 'Nombre del producto']] = df['Código del producto'].str.split('-', n=1, expand=True)
     df[['Nombre del producto', 'Talla']] = df['Nombre del producto'].apply(lambda x: pd.Series(extraer_talla(x)))
     return df
 
