@@ -20,7 +20,6 @@ def organizar_datos(df):
             if not cell_value.isdigit():
                 codigo_producto = cell_value
                 nombre_producto = row[1]
-                referencia_fabrica = row[2]
                 saldo_cantidades = row[3]
                 organized_data.append({
                     'Bodega del producto': bodega,
@@ -50,7 +49,6 @@ def limpiar_datos(df):
             current_producto = {
                 'producto': cell_value.replace('Producto: ', ''),
                 'nombre': row[1],
-                'referencia': row[2],
                 'cantidad': row[3]
             }
         elif 'Bodega:' in cell_value:
@@ -60,7 +58,6 @@ def limpiar_datos(df):
                     'Bodega del producto': bodega,
                     'Código del producto': current_producto['producto'],
                     'Nombre del producto': current_producto['nombre'],
-                    'Referencia de fábrica': current_producto['referencia'],
                     'Cantidad': current_producto['cantidad']
                 })
         elif current_producto and cell_value.isdigit():
@@ -81,11 +78,10 @@ def extraer_talla(nombre_producto):
         return nombre_producto, talla
     return nombre_producto, None
 
-# Función para separar el código del producto y el nombre del producto
+# Función para separar el código de barras y el nombre del producto
 def separar_codigo_y_nombre(df):
-    split_columns = df['Código del producto'].str.split('-', n=1, expand=True)
-    df['Código del producto'] = split_columns[0]
-    df['Nombre del producto'] = split_columns[1]
+    df[['Código del producto', 'Nombre del producto']] = df['Código del producto'].str.split('-', 1, expand=True)
+    df[['Nombre del producto', 'Talla']] = df['Nombre del producto'].apply(lambda x: pd.Series(extraer_talla(x)))
     return df
 
 # Función para filtrar y actualizar los códigos de barras
@@ -100,7 +96,7 @@ def actualizar_codigos(df, bodega):
     # Usar st.data_editor para permitir la edición, pero sin la columna "Bodega del producto"
     edited_df = st.data_editor(editable_df, use_container_width=True)
 
-    # Añadir de nuevo la columna "Bodega del producto" a la DataFrame editado
+    # Añadir de nuevo la columna "Bodega del producto" al DataFrame editado
     edited_df['Bodega del producto'] = bodega_df['Bodega del producto']
     
     return edited_df
@@ -116,8 +112,7 @@ def main():
         st.dataframe(df.head())
 
         cleaned_df = limpiar_datos(df)
-        cleaned_df = separar_codigo_y_nombre(cleaned_df)  # Aplicar la función para separar el código y nombre
-        cleaned_df[['Nombre del producto', 'Talla']] = cleaned_df['Nombre del producto'].apply(lambda x: pd.Series(extraer_talla(x)))
+        cleaned_df = separar_codigo_y_nombre(cleaned_df)
 
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
