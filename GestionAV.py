@@ -52,6 +52,23 @@ def extraer_talla(nombre_producto):
         return nombre_producto, talla
     return nombre_producto, None
 
+# Función para actualizar los códigos de barras
+def actualizar_codigos(df, bodega):
+    bodega_df = df[df['Bodega del producto'] == bodega].copy()
+    bodega_df = bodega_df.reset_index(drop=True)
+    
+    st.write('Datos actualizados:')
+    editable_df = bodega_df.copy()
+    editable_df = editable_df.drop(columns=['Bodega del producto'])
+
+    # Usar st.data_editor para permitir la edición, pero sin la columna "Bodega del producto"
+    edited_df = st.data_editor(editable_df, use_container_width=True)
+
+    # Añadir de nuevo la columna "Bodega del producto" al DataFrame editado
+    edited_df['Bodega del producto'] = bodega_df['Bodega del producto']
+    
+    return edited_df
+
 # Función principal de la aplicación
 def main():
     st.title('GestionAV - Organización de Productos')
@@ -69,6 +86,33 @@ def main():
 
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
+
+        bodega_list = cleaned_df['Bodega del producto'].unique().tolist()
+        selected_bodega = st.selectbox('Seleccione la bodega para actualizar los códigos:', bodega_list)
+
+        if selected_bodega:
+            updated_df = actualizar_codigos(cleaned_df, selected_bodega)
+            
+            if st.button('Aplicar cambios'):
+                for index, row in updated_df.iterrows():
+                    cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Código del producto'] = row['Código del producto']
+                    cleaned_df.loc[(cleaned_df['Bodega del producto'] == selected_bodega) & (cleaned_df.index == index), 'Cantidad'] = row['Cantidad']
+                st.success("Cambios aplicados")
+
+                # Visualizar los datos actualizados
+                st.write('Vista previa de los datos actualizados:')
+                st.dataframe(cleaned_df[cleaned_df['Bodega del producto'] == selected_bodega])
+
+                buffer = BytesIO()
+                cleaned_df.to_excel(buffer, index=False)
+                buffer.seek(0)
+
+                st.download_button(
+                    label='Descargar archivo con progreso',
+                    data=buffer,
+                    file_name='archivo_progreso_Antioquia_Ventas.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
 
         buffer_cleaned = BytesIO()
         cleaned_df.to_excel(buffer_cleaned, index=False)
