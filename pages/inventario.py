@@ -93,5 +93,16 @@ def main():
         st.write('Inventario procesado:')
         st.dataframe(cleaned_df)
 
+        buffer_cleaned = BytesIO()
+        cleaned_df.to_excel(buffer_cleaned, index=False)
+        buffer_cleaned.seek(0)
+
+        st.download_button(
+            label='Descargar datos limpios',
+            data=buffer_cleaned,
+            file_name='datos_limpios_Antioquia_Ventas.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
 if __name__ == '__main__':
     main()
