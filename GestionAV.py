@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
+from pages import inventario
+
 
 # Función para organizar los datos del DataFrame
 def organizar_datos(df):
@@ -20,22 +22,28 @@ def organizar_datos(df):
             if not cell_value.isdigit():
                 codigo_producto = cell_value
                 nombre_producto = row[1]
-                saldo_cantidades = row[3]
+                saldo_cantidades = row[3]  # Asegurarse de que esta columna es la de cantidades
                 organized_data.append({
                     'Bodega del producto': bodega,
                     'Código del producto': codigo_producto,
                     'Nombre del producto': nombre_producto,
-                    'Talla': None,
-                    'Cantidad': saldo_cantidades
+                    'Cantidad': saldo_cantidades,
+                    'Talla': None
                 })
 
     return pd.DataFrame(organized_data)
+
 
 # Función para eliminar filas no deseadas
 def eliminar_filas_no_deseadas(df):
     df = df.drop(index=range(0, 8))
     df.reset_index(drop=True, inplace=True)
     return df
+
+def detectar_productos_anormales(df):
+    df['Cantidad'] = pd.to_numeric(df['Cantidad'], errors='coerce')
+    productos_anormales = df[df['Cantidad'] > 50].copy()
+    return productos_anormales
 
 # Función para limpiar los datos y asegurar que no se pierdan productos importantes
 def limpiar_datos(df):
@@ -103,7 +111,15 @@ def actualizar_codigos(df, bodega):
 
 # Función principal de la aplicación
 def main():
-    st.title('GestionAV - Organización de Productos')
+    st.sidebar.title("Navigation")
+    option = st.sidebar.selectbox("Choose a page", ["Home", "Inventario"])
+
+    if option == "Home":
+        st.title("GestionAV - Home")
+        st.write("Welcome to GestionAV. Please select a page from the sidebar.")
+    elif option == "Inventario":
+        inventario.main()
+
     uploaded_file = st.file_uploader('Subir archivo Excel', type=['xlsx'])
 
     if uploaded_file is not None:
@@ -111,14 +127,21 @@ def main():
         st.write('Datos subidos:')
         st.dataframe(df.head())
 
+        # Clean and process the data
         cleaned_df = limpiar_datos(df)
         cleaned_df = separar_codigo_y_nombre(cleaned_df)
 
         st.write('Datos organizados:')
         st.dataframe(cleaned_df.head())
 
+        # Detect abnormal products
+        productos_anormales = detectar_productos_anormales(cleaned_df)
+        st.write('Productos anormales:')
+        st.dataframe(productos_anormales)
+
+        # Display filter by "Bodega"
         bodega_list = cleaned_df['Bodega del producto'].unique().tolist()
-        selected_bodega = st.selectbox('Seleccione la bodega para actualizar los códigos:', bodega_list)
+        selected_bodega = st.selectbox('Seleccione la bodega para filtrar:', bodega_list)
 
         if selected_bodega:
             updated_df = actualizar_codigos(cleaned_df, selected_bodega)
@@ -140,6 +163,7 @@ def main():
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
 
+        # Allow downloading the cleaned data
         buffer_cleaned = BytesIO()
         cleaned_df.to_excel(buffer_cleaned, index=False)
         buffer_cleaned.seek(0)
